@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "Event": {
+      "title": "Event",
+      "description": "Details about an event (movie, concert, etc.)",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "venue": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "image": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string", "enum": ["Movie", "Concert", "Theater"] },
+        "price": { "type": "number" }
+      },
+      "required": ["title", "venue", "date", "price"]
+    },
+    "Seat": {
+      "title": "Seat",
+      "description": "A specific seat in an event venue",
+      "type": "object",
+      "properties": {
+        "seatId": { "type": "string" },
+        "eventId": { "type": "string" },
+        "type": { "type": "string", "enum": ["VIP", "Regular", "Economy"] },
+        "status": { "type": "string", "enum": ["available", "locked", "booked"] },
+        "lockedBy": { "type": "string" },
+        "lockExpiry": { "type": "string", "format": "date-time" },
+        "price": { "type": "number" }
+      },
+      "required": ["seatId", "eventId", "type", "status", "price"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A user's booking record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "eventId": { "type": "string" },
+        "seats": { "type": "array", "items": { "type": "string" } },
+        "totalAmount": { "type": "number" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "failed"] },
+        "razorpayOrderId": { "type": "string" },
+        "razorpayPaymentId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "eventId", "seats", "totalAmount", "paymentStatus", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/events/{eventId}": {
+      "schema": "Event",
+      "description": "Collection of events"
+    },
+    "/events/{eventId}/seats/{seatId}": {
+      "schema": "Seat",
+      "description": "Seats for a specific event"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "User bookings"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    }
+  }
+}

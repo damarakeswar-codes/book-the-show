@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         request.auth.token.email == "damarakeswarg1999@gmail.com");
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // Events
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      // Seats subcollection
+      match /seats/{seatId} {
+        allow read: if true;
+        allow update: if isAuthenticated() && (
+          isAdmin() || 
+          // Allow locking if available
+          (resource.data.status == 'available' && request.resource.data.status == 'locked' && request.resource.data.lockedBy == request.auth.uid) ||
+          // Allow unlocking if locked by self
+          (resource.data.status == 'locked' && resource.data.lockedBy == request.auth.uid && request.resource.data.status == 'available') ||
+          // Allow booking if locked by self
+          (resource.data.status == 'locked' && resource.data.lockedBy == request.auth.uid && request.resource.data.status == 'booked')
+        );
+        allow write: if isAdmin();
+      }
+    }
+
+    // Bookings
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
