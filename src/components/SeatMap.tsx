@@ -35,10 +35,13 @@ export const SeatMap = ({ eventId, price: basePrice }: { eventId: string; price:
   const { user, socket } = useStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>('10:00 AM');
-  const apiBaseUrl = (
-    (import.meta as any).env.VITE_API_BASE_URL ||
-    ((import.meta as any).env.DEV ? 'http://localhost:3000' : '')
-  ).replace(/\/$/, '');
+  const envApiBaseUrl = ((import.meta as any).env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+  const orderEndpoint = envApiBaseUrl
+    ? `${envApiBaseUrl}/api/payments/order`
+    : ((import.meta as any).env.DEV ? 'http://localhost:3000/api/payments/order' : '/.netlify/functions/payments-order');
+  const verifyEndpoint = envApiBaseUrl
+    ? `${envApiBaseUrl}/api/payments/verify`
+    : ((import.meta as any).env.DEV ? 'http://localhost:3000/api/payments/verify' : '/.netlify/functions/payments-verify');
 
   const selectedSeats = seats.filter(s => s.status === 'locked' && s.lockedBy === user?.uid).map(s => s.id);
 
@@ -115,7 +118,7 @@ export const SeatMap = ({ eventId, price: basePrice }: { eventId: string; price:
 
     const totalAmount = calculateTotal();
     try {
-      const orderResponse = await fetch(`${apiBaseUrl}/api/payments/order`, {
+      const orderResponse = await fetch(orderEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: totalAmount, receipt: `booking_${Date.now()}` })
@@ -123,7 +126,7 @@ export const SeatMap = ({ eventId, price: basePrice }: { eventId: string; price:
 
       if (!orderResponse.ok) {
         throw new Error(
-          `Order creation failed (${orderResponse.status}). Set VITE_API_BASE_URL or run the app with the Express server (npm run dev).`
+          `Order creation failed (${orderResponse.status}). Set VITE_API_BASE_URL correctly or verify your backend/serverless payment endpoint is deployed.`
         );
       }
 
@@ -137,7 +140,7 @@ export const SeatMap = ({ eventId, price: basePrice }: { eventId: string; price:
         description: "Event Booking",
         order_id: order.id,
         handler: async (response: any) => {
-          const verifyRes = await fetch(`${apiBaseUrl}/api/payments/verify`, {
+          const verifyRes = await fetch(verifyEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(response)
