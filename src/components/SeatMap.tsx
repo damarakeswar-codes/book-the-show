@@ -36,11 +36,12 @@ export const SeatMap = ({ eventId, price: basePrice }: { eventId: string; price:
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>('10:00 AM');
   const envApiBaseUrl = ((import.meta as any).env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+  const isNetlifyBase = envApiBaseUrl.includes('netlify.app');
   const orderEndpoint = envApiBaseUrl
-    ? `${envApiBaseUrl}/api/payments/order`
+    ? `${envApiBaseUrl}${isNetlifyBase ? '/.netlify/functions/payments-order' : '/api/payments/order'}`
     : ((import.meta as any).env.DEV ? 'http://localhost:3000/api/payments/order' : '/.netlify/functions/payments-order');
   const verifyEndpoint = envApiBaseUrl
-    ? `${envApiBaseUrl}/api/payments/verify`
+    ? `${envApiBaseUrl}${isNetlifyBase ? '/.netlify/functions/payments-verify' : '/api/payments/verify'}`
     : ((import.meta as any).env.DEV ? 'http://localhost:3000/api/payments/verify' : '/.netlify/functions/payments-verify');
 
   const selectedSeats = seats.filter(s => s.status === 'locked' && s.lockedBy === user?.uid).map(s => s.id);

@@ -2,9 +2,20 @@ import crypto from "crypto";
 
 const jsonHeaders = {
   "Content-Type": "application/json",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-export const handler = async (event: any) => {
+export const handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 200,
+      headers: jsonHeaders,
+      body: JSON.stringify({ ok: true }),
+    };
+  }
+
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -44,7 +55,7 @@ export const handler = async (event: any) => {
       headers: jsonHeaders,
       body: JSON.stringify({ status: "failure", message: "Invalid signature" }),
     };
-  } catch (error: any) {
+  } catch (error) {
     return {
       statusCode: 500,
       headers: jsonHeaders,
