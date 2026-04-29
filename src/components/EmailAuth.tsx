@@ -88,7 +88,7 @@ export const EmailAuth: React.FC<EmailAuthProps> = ({ onSuccess }) => {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-2">
         <AnimatePresence mode="wait">
           {mode === "signup" && (
             <motion.div
@@ -130,9 +130,6 @@ export const EmailAuth: React.FC<EmailAuthProps> = ({ onSuccess }) => {
         <div className="space-y-2">
           <div className="flex justify-between items-center px-1">
             <label className="text-sm font-bold text-slate-400">Password</label>
-            {mode === "login" && (
-              <button type="button" className="text-xs text-indigo-500 hover:text-indigo-400 font-bold">Forgot Password?</button>
-            )}
           </div>
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import { Server } from "socket.io";
@@ -36,16 +37,25 @@ async function startServer() {
   app.post("/api/payments/order", async (req, res) => {
     try {
       const { amount, currency = "INR", receipt } = req.body;
+      const amountInRupees = Number(amount);
+
+      if (!Number.isFinite(amountInRupees) || amountInRupees <= 0) {
+        return res.status(400).json({ error: "Invalid amount. Amount must be a positive number." });
+      }
+
       const options = {
-        amount: amount * 100, // amount in the smallest currency unit
+        amount: Math.round(amountInRupees * 100), // amount in paise
         currency,
-        receipt,
+        receipt: receipt || `booking_${Date.now()}`,
       };
       const order = await razorpay.orders.create(options);
       res.json(order);
     } catch (error) {
       console.error("Razorpay Order Error:", error);
-      res.status(500).json({ error: "Failed to create order" });
+      res.status(500).json({
+        error: "Failed to create order",
+        details: (error as any)?.error?.description || (error as Error)?.message || "Unknown Razorpay error"
+      });
     }
   });
 

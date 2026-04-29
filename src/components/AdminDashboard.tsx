@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
-export const AdminDashboard = () => {
+export const AdminDashboard = ({ theme = 'dark' }: { theme?: 'dark' | 'light' }) => {
   const { setView, user: authUser } = useStore();
   const [stats, setStats] = useState({
     totalBookings: 0,
@@ -27,6 +27,13 @@ export const AdminDashboard = () => {
   const [topEvents, setTopEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Analytics');
+  const isLight = theme === 'light';
+  const panelClass = isLight
+    ? 'bg-white p-8 rounded-[2.5rem] border border-slate-200'
+    : 'bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-800/50';
+  const statCardClass = isLight
+    ? 'bg-white p-8 rounded-3xl border border-slate-200 hover:border-indigo-300 transition-all group'
+    : 'bg-slate-900/40 backdrop-blur-xl p-8 rounded-3xl border border-slate-800/50 hover:border-indigo-500/30 transition-all group';
 
   useEffect(() => {
     setLoading(true);
@@ -99,17 +106,17 @@ export const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0a0b14] text-white">
+    <div className={`flex min-h-screen ${isLight ? 'bg-slate-50 text-slate-900' : 'bg-[#0a0b14] text-white'}`}>
       <main className="flex-1 flex flex-col">
         <div className="space-y-10 mx-auto w-full">
           {/* Title Section */}
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-4xl font-black tracking-tight text-white uppercase">Analytics Overview</h2>
-              <p className="text-slate-500 mt-2 font-medium">Monitoring the pulse of BTS ecosystem.</p>
+              <p className={`${isLight ? 'text-slate-600' : 'text-slate-500'} mt-2 font-medium`}>Monitoring the pulse of BTS ecosystem.</p>
             </div>
             <div className="flex gap-4">
-              <button className="flex items-center gap-2 px-6 py-3 bg-slate-900 border border-slate-800 rounded-xl text-sm font-bold text-white hover:bg-slate-800 transition-all">
+              <button className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${isLight ? 'bg-white border border-slate-300 text-slate-900 hover:bg-slate-100' : 'bg-slate-900 border border-slate-800 text-white hover:bg-slate-800'}`}>
                 <Calendar size={18} className="text-indigo-500" />
                 Last 30 Days
                 <ChevronDown size={16} />
@@ -129,7 +136,7 @@ export const AdminDashboard = () => {
               { label: 'Active Users', value: formatNumber(stats.activeUsers), trend: '+15%', icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
               { label: 'Conversion Rate', value: `${stats.conversionRate}%`, trend: '-0.5%', icon: TrendingUp, color: 'text-amber-400', bg: 'bg-amber-400/10', down: true },
             ].map((item, i) => (
-              <div key={i} className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-3xl border border-slate-800/50 hover:border-indigo-500/30 transition-all group">
+              <div key={i} className={statCardClass}>
                 <div className="flex justify-between items-start mb-6">
                   <div className={`w-12 h-12 ${item.bg} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
                     <item.icon className={item.color} size={24} />
@@ -147,7 +154,7 @@ export const AdminDashboard = () => {
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-800/50">
+            <div className={`lg:col-span-2 ${panelClass}`}>
               <div className="flex justify-between items-center mb-10">
                 <div>
                   <h3 className="text-xl font-black text-white uppercase tracking-tight">Revenue Growth</h3>
@@ -186,7 +193,7 @@ export const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-800/50 flex flex-col">
+            <div className={`${panelClass} flex flex-col`}>
               <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Bookings Distribution</h3>
               <p className="text-slate-500 text-xs font-medium mb-10">Movies vs Events volume</p>
               
@@ -224,7 +231,7 @@ export const AdminDashboard = () => {
 
           {/* Lists Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-800/50">
+            <div className={`lg:col-span-2 ${panelClass}`}>
               <div className="flex justify-between items-center mb-10">
                 <h3 className="text-xl font-black text-white uppercase tracking-tight">Top Performing Content</h3>
                 <button className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300 transition-colors">View All</button>
@@ -252,7 +259,7 @@ export const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-800/50">
+            <div className={panelClass}>
               <div className="flex justify-between items-center mb-10">
                 <h3 className="text-xl font-black text-white uppercase tracking-tight">Latest Bookings</h3>
                 <button className="text-slate-600 hover:text-white transition-colors">
@@ -284,7 +291,7 @@ export const AdminDashboard = () => {
           </div>
 
           {/* Log Table */}
-          <div className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-slate-800/50">
+          <div className={panelClass}>
             <div className="flex justify-between items-center mb-10">
               <h3 className="text-xl font-black text-white uppercase tracking-tight">Detailed Bookings Log</h3>
               <button className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-800 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-white transition-all">

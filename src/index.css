@@ -4,3 +4,49 @@
   width: 0;
   height: 0;
 }
+
+body[data-theme='light'] {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+body[data-theme='light'] .bg-black {
+  background-color: #f8fafc !important;
+}
+
+body[data-theme='light'] .bg-black\/80 {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+}
+
+body[data-theme='light'] .text-white {
+  color: #0f172a !important;
+}
+
+body[data-theme='light'] .text-slate-500,
+body[data-theme='light'] .text-slate-600 {
+  color: #64748b !important;
+}
+
+body[data-theme='light'] .text-slate-400 {
+  color: #475569 !important;
+}
+
+body[data-theme='light'] .bg-slate-900,
+body[data-theme='light'] .bg-slate-900\/50,
+body[data-theme='light'] .bg-slate-900\/80,
+body[data-theme='light'] .bg-\[\#090909\],
+body[data-theme='light'] .bg-\[\#121212\],
+body[data-theme='light'] .bg-\[\#171717\] {
+  background-color: #ffffff !important;
+}
+
+body[data-theme='light'] .border-slate-800,
+body[data-theme='light'] .border-slate-900 {
+  border-color: #cbd5e1 !important;
+}
+
+body[data-theme='light'] .from-\[\#171717\],
+body[data-theme='light'] .to-\[\#121212\] {
+  --tw-gradient-from: #ffffff var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(248 250 252 / 0) var(--tw-gradient-to-position) !important;
+}

@@ -3,7 +3,7 @@ import { collection, query, where, getDocs, doc, getDoc, orderBy } from 'firebas
 import { db } from '../firebase';
 import { useStore } from '../store/useStore';
 import { motion } from 'motion/react';
-import { Ticket, Calendar, MapPin, CreditCard, ChevronRight, Loader2, Download } from 'lucide-react';
+import { Ticket, Calendar, MapPin, Loader2, Download, Search, User, Share2, ArrowLeft } from 'lucide-react';
 
 interface Booking {
   id: string;
@@ -12,6 +12,7 @@ interface Booking {
   eventImage?: string;
   venue?: string;
   date?: string;
+  time?: string;
   seats: string[];
   totalAmount: number;
   paymentStatus: string;
@@ -22,18 +23,35 @@ export const MyBookings = () => {
   const { user } = useStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
   useEffect(() => {
     const fetchBookings = async () => {
-      if (!user) return;
+      if (!user?.uid) {
+        setBookings([]);
+        setLoading(false);
+        return;
+      }
       
       try {
+        setLoading(true);
         const q = query(
           collection(db, 'bookings'), 
           where('userId', '==', user.uid),
           orderBy('createdAt', 'desc')
         );
-        const snap = await getDocs(q);
+        let snap;
+
+        try {
+          snap = await getDocs(q);
+        } catch {
+          // Fallback when composite index is not ready in Firestore.
+          const fallbackQuery = query(
+            collection(db, 'bookings'),
+            where('userId', '==', user.uid)
+          );
+          snap = await getDocs(fallbackQuery);
+        }
         
         const bookingData = await Promise.all(snap.docs.map(async (bookingDoc) => {
           const data = bookingDoc.data();
@@ -51,6 +69,7 @@ export const MyBookings = () => {
           } as Booking;
         }));
         
+        bookingData.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime());
         setBookings(bookingData);
       } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -76,125 +95,150 @@ export const MyBookings = () => {
     );
   }
 
+  const now = new Date();
+  const upcomingBookings = bookings.filter((booking) => {
+    const bookingDate = new Date(booking.date || booking.createdAt);
+    return bookingDate >= now;
+  });
+  const pastBookings = bookings.filter((booking) => {
+    const bookingDate = new Date(booking.date || booking.createdAt);
+    return bookingDate < now;
+  });
+
+  const visibleBookings = activeTab === 'upcoming' ? upcomingBookings : pastBookings;
+  const featuredBooking = visibleBookings[0] || bookings[0];
+  const collectionBookings = bookings.filter((booking) => booking.id !== featuredBooking.id).slice(0, 3);
+
   return (
-    <div className="space-y-8 pb-20">
-      <div className="flex items-center justify-between mb-12">
-        <div>
-          <h2 className="text-4xl font-black tracking-tight">My Digital Wallet</h2>
-          <p className="text-slate-500 mt-1">All your confirmed tickets in one place</p>
-        </div>
-        <div className="bg-slate-900/50 border border-slate-800 px-6 py-3 rounded-2xl flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Total Spent</p>
-            <p className="text-lg font-black text-emerald-400">₹{bookings.reduce((acc, b) => acc + b.totalAmount, 0)}</p>
-          </div>
-          <div className="w-px h-8 bg-slate-800"></div>
-          <div className="text-right">
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Tickets</p>
-            <p className="text-lg font-black text-white">{bookings.length}</p>
-          </div>
-        </div>
+    <div className="space-y-4">
+      <div className="mt-6 flex items-center gap-8 text-xs uppercase tracking-widest font-bold">
+        <button
+          onClick={() => setActiveTab('upcoming')}
+          className={`cursor-pointer pb-3 border-b-2 transition-colors ${
+            activeTab === 'upcoming'
+              ? 'text-rose-500 border-rose-500'
+              : 'text-slate-500 border-transparent hover:text-slate-300'
+          }`}
+        >
+          Upcoming Tickets
+        </button>
+        <button
+          onClick={() => setActiveTab('past')}
+          className={`cursor-pointer pb-3 border-b-2 transition-colors ${
+            activeTab === 'past'
+              ? 'text-rose-500 border-rose-500'
+              : 'text-slate-500 border-transparent hover:text-slate-300'
+          }`}
+        >
+          Past Bookings
+        </button>
       </div>
+      <div className="space-y-8">
+        <motion.div
+          key={featuredBooking.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-[1.5rem] border border-slate-800 bg-gradient-to-b from-[#171717] to-[#121212] overflow-hidden shadow-2xl"
+        >
+          <div className="flex flex-col xl:flex-row">
+            <div className="xl:w-[240px] h-[260px] xl:h-auto">
+              <img
+                src={featuredBooking.eventImage}
+                alt={featuredBooking.eventTitle}
+                className="h-full w-full object-cover"
+              />
+            </div>
 
-      <div className="grid grid-cols-1 gap-10">
-        {bookings.map((booking, index) => (
-          <motion.div
-            key={booking.id}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="relative group"
-          >
-            {/* The Ticket Container */}
-            <div className="flex flex-col lg:flex-row bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl hover:border-indigo-500/50 transition-all duration-500">
-              
-              {/* Left Side: Visual */}
-              <div className="w-full lg:w-72 h-48 lg:h-auto relative">
-                <img 
-                  src={booking.eventImage} 
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" 
-                  alt={booking.eventTitle} 
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/20 to-transparent lg:bg-gradient-to-t"></div>
-                <div className="absolute bottom-6 left-6">
-                  <div className="bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-xl">
-                    <Ticket className="text-white" size={24} />
-                  </div>
-                </div>
+            <div className="flex-1 p-6 sm:p-8 border-r border-slate-800">
+              <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-widest font-semibold mb-5">
+                <span className="px-2 py-1 rounded-full bg-slate-800 text-slate-300">Action</span>
+                <span className="px-2 py-1 rounded-full bg-slate-800 text-slate-300">Drama</span>
+                <span className="px-2 py-1 rounded-full bg-rose-600/20 text-rose-400 border border-rose-500/30">Booked</span>
               </div>
 
-              {/* Middle Section: Info */}
-              <div className="flex-1 p-8 lg:p-10 flex flex-col justify-between relative">
-                {/* Perforation Line (Visual) */}
-                <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-px border-r border-dashed border-slate-700 my-8"></div>
-                
+              <h3 className="text-3xl sm:text-4xl font-black mb-4">{featuredBooking.eventTitle}</h3>
+              <p className="text-slate-300 mb-6">Language: English</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                 <div>
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h3 className="text-3xl font-black text-white mb-2 tracking-tight group-hover:text-indigo-400 transition-colors">
-                        {booking.eventTitle}
-                      </h3>
-                      <div className="flex items-center gap-4 text-slate-400">
-                        <span className="flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-full text-xs">
-                          <Calendar size={14} className="text-indigo-400" /> 
-                          {new Date(booking.date || '').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                        </span>
-                        <span className="flex items-center gap-2 bg-slate-800/50 px-3 py-1 rounded-full text-xs">
-                          <MapPin size={14} className="text-indigo-400" /> 
-                          {booking.venue}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mt-8">
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Seats</p>
-                      <p className="text-lg font-black text-white">{booking.seats.join(', ')}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Price</p>
-                      <p className="text-lg font-black text-white">₹{booking.totalAmount}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Status</p>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                        <p className="text-sm font-bold text-emerald-500 uppercase">Confirmed</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Booking ID</p>
-                      <p className="text-xs font-mono text-slate-500 truncate">#{booking.id.slice(-8).toUpperCase()}</p>
-                    </div>
-                  </div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Theatre</p>
+                  <p className="text-2xl font-bold">{featuredBooking.venue || 'Venue TBA'}</p>
+                  <p className="text-slate-400 text-sm">{featuredBooking.seats.join(', ')}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Show Timing</p>
+                  <p className="text-2xl font-bold">
+                    {new Date(featuredBooking.date || featuredBooking.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
+                  </p>
+                  <p className="text-slate-400 text-sm">{featuredBooking.time || '7:30 PM'}</p>
                 </div>
               </div>
 
-              {/* Right Side: Stub/Action */}
-              <div className="w-full lg:w-64 bg-slate-800/30 p-8 lg:p-10 flex flex-col items-center justify-center gap-6">
-                <div className="w-32 h-32 bg-white p-2 rounded-2xl shadow-inner">
-                  {/* Mock QR Code */}
-                  <div className="w-full h-full bg-slate-100 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-300">
-                    <div className="grid grid-cols-4 gap-1">
-                      {Array.from({ length: 16 }).map((_, i) => (
-                        <div key={i} className={`w-4 h-4 ${Math.random() > 0.5 ? 'bg-black' : 'bg-transparent'}`}></div>
-                      ))}
-                    </div>
-                  </div>
+              <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Booking ID</p>
+                  <p className="font-semibold">BMS{featuredBooking.id.slice(-8).toUpperCase()}</p>
                 </div>
-                <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 transition-all">
-                  <Download size={18} />
-                  Download
-                </button>
+                <div className="text-left sm:text-right">
+                  <p className="text-emerald-400 text-sm font-semibold">{featuredBooking.paymentStatus === 'paid' ? 'Paid' : featuredBooking.paymentStatus}</p>
+                  <p className="text-4xl font-black">₹{featuredBooking.totalAmount.toFixed(2)}</p>
+                </div>
               </div>
             </div>
 
-            {/* Decorative Ticket Notches */}
-            <div className="hidden lg:block absolute right-64 -top-4 w-8 h-8 bg-black rounded-full border border-slate-800"></div>
-            <div className="hidden lg:block absolute right-64 -bottom-4 w-8 h-8 bg-black rounded-full border border-slate-800"></div>
-          </motion.div>
-        ))}
+            <div className="xl:w-[280px] p-6 sm:p-8 bg-[#1a1a1a] flex flex-col items-center justify-center gap-5">
+              <div className="w-40 h-40 bg-white rounded-xl p-4">
+                <div className="w-full h-full border border-slate-300 rounded-lg flex items-center justify-center">
+                  <div className="grid grid-cols-6 gap-1">
+                    {Array.from({ length: 36 }).map((_, i) => (
+                      <div key={i} className={`w-1.5 h-1.5 ${i % 3 === 0 || i % 7 === 0 ? 'bg-black' : 'bg-white'}`}></div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Scan At Entry</p>
+              <button className="w-full bg-rose-600 hover:bg-rose-500 transition-colors text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2">
+                <Download size={16} />
+                Download Ticket
+              </button>
+              <button className="w-full border border-slate-700 hover:border-slate-600 transition-colors text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2">
+                <Share2 size={16} />
+                Share
+              </button>
+            </div>
+          </div>
+        </motion.div>
+
+        {collectionBookings.length > 0 && (
+          <>
+            <h3 className="text-3xl font-black mb-5">More from your collection</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {collectionBookings.map((booking) => (
+                <div key={booking.id} className="bg-[#121212] border border-slate-900 rounded-2xl p-4 flex items-center gap-4">
+                  <img
+                    src={booking.eventImage}
+                    alt={booking.eventTitle}
+                    className="w-16 h-20 object-cover rounded-lg"
+                  />
+                  <div>
+                    <p className="font-semibold">{booking.eventTitle}</p>
+                    <p className="text-slate-400 text-sm">{booking.venue || 'Venue TBA'}</p>
+                    <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <Calendar size={12} />
+                        {new Date(booking.date || booking.createdAt).toLocaleDateString()}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin size={12} />
+                        {booking.seats.length} seats
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

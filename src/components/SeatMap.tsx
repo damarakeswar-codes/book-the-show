@@ -35,6 +35,10 @@ export const SeatMap = ({ eventId, price: basePrice }: { eventId: string; price:
   const { user, socket } = useStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTime, setSelectedTime] = useState<string>('10:00 AM');
+  const apiBaseUrl = (
+    (import.meta as any).env.VITE_API_BASE_URL ||
+    ((import.meta as any).env.DEV ? 'http://localhost:3000' : '')
+  ).replace(/\/$/, '');
 
   const selectedSeats = seats.filter(s => s.status === 'locked' && s.lockedBy === user?.uid).map(s => s.id);
 
@@ -111,12 +115,19 @@ export const SeatMap = ({ eventId, price: basePrice }: { eventId: string; price:
 
     const totalAmount = calculateTotal();
     try {
-      const response = await fetch('/api/payments/order', {
+      const orderResponse = await fetch(`${apiBaseUrl}/api/payments/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: totalAmount, receipt: `booking_${Date.now()}` })
       });
-      const order = await response.json();
+
+      if (!orderResponse.ok) {
+        throw new Error(
+          `Order creation failed (${orderResponse.status}). Set VITE_API_BASE_URL or run the app with the Express server (npm run dev).`
+        );
+      }
+
+      const order = await orderResponse.json();
 
       const options = {
         key: (import.meta as any).env.VITE_RAZORPAY_KEY_ID || "rzp_test_please_add_key_to_secrets", 
@@ -126,11 +137,16 @@ export const SeatMap = ({ eventId, price: basePrice }: { eventId: string; price:
         description: "Event Booking",
         order_id: order.id,
         handler: async (response: any) => {
-          const verifyRes = await fetch('/api/payments/verify', {
+          const verifyRes = await fetch(`${apiBaseUrl}/api/payments/verify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(response)
           });
+
+          if (!verifyRes.ok) {
+            throw new Error(`Payment verification failed (${verifyRes.status})`);
+          }
+
           const verifyData = await verifyRes.json();
 
           if (verifyData.status === 'success') {

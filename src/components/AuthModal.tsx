@@ -40,7 +40,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center overflow-y-auto p-3 py-4 sm:p-6">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -53,10 +53,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-md bg-[#121826] border border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden"
+        className="relative my-auto flex w-full max-w-md max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-[2rem] border border-slate-800 bg-[#121826] shadow-2xl sm:max-h-[calc(100vh-3rem)] sm:rounded-[2.5rem]"
       >
         {/* Header */}
-        <div className="p-8 flex justify-between items-center">
+        <div className="flex items-center justify-between p-5 sm:p-8">
           <div className="flex items-center gap-2">
             <div className="bg-indigo-600 p-1.5 rounded-lg">
               <Ticket size={24} className="text-white" />
@@ -71,7 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="px-8 pb-8 space-y-4">
+        <div className="space-y-4 overflow-y-auto px-5 pb-5 sm:px-8 sm:pb-8">
           <div className="text-center">
             <h2 className="text-2xl font-black text-white mb-2">Welcome Back</h2>
             <p className="text-slate-500 text-sm font-medium">Please login to continue your booking</p>

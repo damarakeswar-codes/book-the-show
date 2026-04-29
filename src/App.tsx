@@ -20,7 +20,6 @@ import { SeatMap } from './components/SeatMap';
 import { AdminDashboard } from './components/AdminDashboard';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Ticket, 
   LayoutDashboard, 
   LogOut, 
   Calendar, 
@@ -28,7 +27,13 @@ import {
   ChevronRight,
   Search,
   Bell,
-  User as UserIcon
+  User as UserIcon,
+  Facebook,
+  Instagram,
+  Youtube,
+  Twitter,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface Event {
@@ -51,8 +56,22 @@ import { AuthProvider, useAuth } from './components/AuthContext';
 import { AuthModal } from './components/AuthModal';
 
 import { Toast, useToast } from './components/Toast';
+import bookTheShowLogoLightTheme from './assets/booktheshow.png';
+import bookTheShowLogoDarkTheme from './assets/booktheshow-dark.png';
 
 function AppContent() {
+  const footerLinks = {
+    helpCenter: "mailto:support@booktheshow.app?subject=Help%20Center%20Support",
+    terms: "https://bookmyshow.com/terms-and-conditions",
+    privacy: "https://bookmyshow.com/privacy",
+    socials: {
+      facebook: "https://www.facebook.com/bookmyshow",
+      instagram: "https://www.instagram.com/bookmyshowin",
+      youtube: "https://www.youtube.com/@bookmyshow",
+      twitter: "https://x.com/bookmyshow",
+    },
+  };
+
   const { user, setUser, initSocket, view, setView } = useStore();
   const { user: authUser, logout: authLogout, loading: authLoading } = useAuth();
   const { toast, showToast, hideToast } = useToast();
@@ -60,6 +79,18 @@ function AppContent() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('bts-theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('bts-theme', theme);
+  }, [theme]);
+
+  const brandLogo = theme === 'dark' ? bookTheShowLogoDarkTheme : bookTheShowLogoLightTheme;
 
   useEffect(() => {
     initSocket();
@@ -101,7 +132,7 @@ function AppContent() {
   };
 
   const renderContent = () => {
-    if (view === 'admin') return <AdminDashboard />;
+    if (view === 'admin') return <AdminDashboard theme={theme} />;
     if (view === 'bookings') return <MyBookings />;
     if (view === 'success') return <BookingSuccess />;
     
@@ -225,20 +256,17 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans">
+    <div className={`min-h-screen font-sans transition-colors ${theme === 'dark' ? 'bg-black text-white' : 'bg-slate-50 text-slate-900'}`}>
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       <AnimatePresence>
         {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
       </AnimatePresence>
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-slate-800 px-6 py-4">
+      <nav className={`sticky top-0 z-50 backdrop-blur-xl border-b px-6 py-4 ${theme === 'dark' ? 'bg-black/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setView('home'); setSelectedEvent(null)}}>
-              <div className="bg-indigo-600 p-1.5 rounded-lg">
-                <Ticket size={24} className="text-white" />
-              </div>
-              <span className="text-xl font-black tracking-tighter">BOOK THE SHOW</span>
+              <img src={brandLogo} alt="Book The Show" className="h-8 w-auto object-contain" />
             </div>
             <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-400">
               <button onClick={() => {setView('home'); setSelectedEvent(null)}} className={`hover:text-white transition-colors ${view === 'home' ? 'text-white' : ''}`}>Explore</button>
@@ -253,7 +281,15 @@ function AppContent() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center bg-slate-900 border border-slate-800 rounded-full px-4 py-1.5 gap-2">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className={`p-2 rounded-xl transition-colors ${theme === 'dark' ? 'bg-slate-900 text-slate-300 hover:text-white' : 'bg-slate-100 text-slate-700 hover:text-slate-900'}`}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
+            <div className={`hidden md:flex items-center border rounded-full px-4 py-1.5 gap-2 ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-300'}`}>
               <Search size={16} className="text-slate-500" />
               <input 
                 type="text" 
@@ -285,7 +321,7 @@ function AppContent() {
             ) : (
               <button 
                 onClick={() => setIsAuthModalOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 py-2 rounded-xl transition-all shadow-lg shadow-indigo-500/20"
               >
                 Login / Signup
               </button>
@@ -299,6 +335,98 @@ function AppContent() {
           {renderContent()}
         </AnimatePresence>
       </main>
+
+      <footer className={`mt-16 border-t ${theme === 'dark' ? 'border-slate-900 bg-[#090909]' : 'border-slate-200 bg-slate-100'}`}>
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <img src={brandLogo} alt="Book The Show" className="h-9 w-auto object-contain" />
+              </div>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                Your destination for booking movie and event tickets with real-time seats and instant confirmation.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-4">Quick Links</h4>
+              <ul className="space-y-2 text-sm text-slate-400">
+                <li><button onClick={() => { setView('home'); setSelectedEvent(null); }} className="hover:text-white transition-colors">Explore Events</button></li>
+                <li><button onClick={() => setView('bookings')} className="hover:text-white transition-colors">My Bookings</button></li>
+                <li><button onClick={() => setView('admin')} className="hover:text-white transition-colors">Dashboard</button></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-4">Support</h4>
+              <ul className="space-y-2 text-sm text-slate-400">
+                <li>
+                  <a href={footerLinks.helpCenter} className="hover:text-white transition-colors">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href={footerLinks.terms} target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href={footerLinks.privacy} target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-4">Follow Us</h4>
+              <div className="flex items-center gap-3">
+                <a
+                  href={footerLinks.socials.facebook}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  aria-label="Facebook"
+                >
+                  <Facebook size={16} />
+                </a>
+                <a
+                  href={footerLinks.socials.instagram}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  aria-label="Instagram"
+                >
+                  <Instagram size={16} />
+                </a>
+                <a
+                  href={footerLinks.socials.youtube}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  aria-label="YouTube"
+                >
+                  <Youtube size={16} />
+                </a>
+                <a
+                  href={footerLinks.socials.twitter}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  aria-label="Twitter"
+                >
+                  <Twitter size={16} />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 pt-6 border-t border-slate-900 text-xs text-slate-500 flex flex-col sm:flex-row justify-between gap-3">
+            <p>© {new Date().getFullYear()} BOOK THE SHOW. All rights reserved.</p>
+            <p>Made for seamless movie and event ticket booking.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
